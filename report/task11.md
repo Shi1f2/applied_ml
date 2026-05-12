@@ -44,3 +44,11 @@ Both approaches achieve perfect classification on both oracles:
 | Validation oracle | 100 | 1.000 | 1.000 | `[[84, 0], [0, 16]]` |
 
 A1 and A2 disagree on 33 of 11,503 training rows (short Enron emails where A2 scores 0.2–0.5, below threshold); A2 never flags any row A1 missed. Predicted spam fractions of 25.6% / 23.3% / 24.9% match the brief's "even distribution" claim. **A1 is used in production**: more conservative, no training, fully interpretable, zero false positives on 2,000 NLTK movie reviews (§9). With 0/200 oracle errors, the 95% upper bound on Stage A error rate is ≈1.5%.
+
+## 6. Stage B pre processing
+
+A single tokeniser is applied identically to the AML training, validation, test, and NLTK external corpus (rule: pre processing must mirror across all evaluation sets), shown in Figure 2.
+
+![Figure 2](../figures/task1_preprocess.png)
+
+*Figure 2: Stage B pre processing pipeline. Negation tokens (`not`, `no`, `never`, `n't`, `cannot`, `nor`, `none`) are explicitly preserved because removing them inverts sentiment ("not good" → "good").*
