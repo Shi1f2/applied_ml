@@ -52,3 +52,49 @@ A single tokeniser is applied identically to the AML training, validation, test,
 ![Figure 2](../figures/task1_preprocess.png)
 
 *Figure 2: Stage B pre processing pipeline. Negation tokens (`not`, `no`, `never`, `n't`, `cannot`, `nor`, `none`) are explicitly preserved because removing them inverts sentiment ("not good" → "good").*
+
+## 7. Stage B approaches compared
+
+Four approaches with progressively richer representations were compared. All use binary cross entropy loss; the linear models use it via logistic regression, the BiLSTM via `BCEWithLogitsLoss`.
+
+**B1 TF IDF (1-2 grams) + Logistic Regression.** Same vectoriser settings as A2 but driven by the sentiment `label` of non spam training rows.
+
+**B2 Self trained Word2Vec + Logistic Regression.** 200d CBOW model (gensim [5]; window=5, min_count=3, 10 epochs) trained on cleaned training reviews. Each review is the mean of its in vocabulary vectors.
+
+**B3 Pre trained GloVe (100d, 6B token Wikipedia + Gigaword) + Logistic Regression.** Same averaging strategy as B2 with `glove-wiki-gigaword-100` [6]. Pre training is unsupervised (co occurrence factorisation, no labels) satisfies the rule against external labelled data.
+
+**B4 BiLSTM with GloVe initialisation, fine tuned (PyTorch [7]).** Architecture in Figure 3. Adam (`lr=1e-3`), grad clip 5.0, batch 32, max 15 epochs, early stopping on val loss (patience 2). GloVe vocabulary coverage 96.2% (8,278 / 8,606); OOV tokens Gaussian initialised and updated during fine tuning. Early stopping triggered at epoch 5; best epoch (3) restored before evaluation.
+
+![Figure 3](../figures/task1_bilstm_architecture.png)
+
+*Figure 3: B4 BiLSTM architecture. Bidirectionality captures constructions like "good ... but boring" where sentiment depends on what comes after a positive word. Trained with `BCEWithLogitsLoss`.*
+
+## 8. Stage B results
+
+Quantitative results on the **held out validation set** (1,066 reviews after Stage A filtering, perfectly balanced 533 / 533):
+
+| Model | Accuracy | Precision | Recall | F1 |
+|---|---:|---:|---:|---:|
+| B1 TF IDF | 0.760 | 0.771 | 0.739 | 0.755 |
+| B2 self W2V | 0.568 | 0.558 | 0.653 | 0.602 |
+| B3 GloVe | 0.720 | 0.722 | 0.717 | 0.719 |
+| **B4 BiLSTM** | **0.775** | 0.762 | **0.799** | **0.780** |
+
+Confusion matrix for B4 (rows = true, cols = predicted, classes `[0, 1]`):
+```
+[[400, 133],
+ [107, 426]]
+```
+
+**Observations.** B2 underperforms 8,530 short reviews is too small to learn dense vectors; B3 recovers most of the gap by importing 6 B token statistics. B1 beats B3 because bigram TF IDF captures explicit phrases ("not good", "very bad") that LogReg can weight directly, whereas dense averaging discards order. B4 beats B1 because its sequence model preserves order and bidirectional context; higher recall (0.799 vs 0.739) suggests it captures positive markers buried late in reviews.
+
+**End to end 3 class confusion matrix on the validation oracle** (true class from hand labelling for spam rows, otherwise the supplied `label`):
+
+```
+           pred=spam  pred=neg  pred=pos
+true spam       16         0          0
+true neg         0        31          9
+true pos         0         9         35
+```
+
+3 class accuracy 82.0%. Stage A precision and recall both 1.0; Stage B review accuracy 78.6% (66/84), stable against 77.5% on the full filtered validation set.
