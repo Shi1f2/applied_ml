@@ -98,3 +98,17 @@ true pos         0         9         35
 ```
 
 3 class accuracy 82.0%. Stage A precision and recall both 1.0; Stage B review accuracy 78.6% (66/84), stable against 77.5% on the full filtered validation set.
+
+## 9. External evaluation NLTK `movie_reviews`
+
+B1 (the most reproducible model no GloVe download, fully self contained) was evaluated on the NLTK `movie_reviews` corpus [2] (2,000 reviews, 1,000 pos / 1,000 neg, no spam). The same tokeniser and Stage A heuristic were applied.
+
+| Metric | Value |
+|---|---:|
+| Stage A false positives | 0 / 2,000 |
+| B1 accuracy | 0.763 |
+| B1 precision | 0.933 |
+| B1 recall | 0.568 |
+| B1 F1 | 0.706 |
+
+Headline accuracy on NLTK (76.3%) is close to AML val (76.0%) the model generalises but the error profile shifts: precision 0.93, recall 0.57. B1 is biased toward "negative" on NLTK, likely because Pang Lee reviews are longer, more formal and use film criticism vocabulary absent from AML training. Stage A's zero false positives confirm the structural heuristic does not over trigger on real movie content.
