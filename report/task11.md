@@ -112,3 +112,50 @@ B1 (the most reproducible model no GloVe download, fully self contained) was eva
 | B1 F1 | 0.706 |
 
 Headline accuracy on NLTK (76.3%) is close to AML val (76.0%) the model generalises but the error profile shifts: precision 0.93, recall 0.57. B1 is biased toward "negative" on NLTK, likely because Pang Lee reviews are longer, more formal and use film criticism vocabulary absent from AML training. Stage A's zero false positives confirm the structural heuristic does not over trigger on real movie content.
+
+## 10. Test predictions
+
+The end to end B4 pipeline applied to the 1,434 row test set in original order produces 368 spam (`-1`), 498 negative (`0`), 568 positive (`1`). The output array of shape `(1434, 1)` is written via the supplied `save_as_csv` function to `outputs/results_task1.csv`. The 25.7% predicted spam fraction is consistent with train (25.6%) and val (23.3%).
+
+## 11. Failure cases and systematic bias
+
+**Contrastive constructions ("X, but Y").** B4 frequently misses pivots, e.g. *"Beautiful to look at, but boring to think about"* (predicted positive, actually negative); *"Although Janice Beard is weak when it relies on familiar ideas, it succeeds because of its boldness"* (predicted negative, actually positive). Using bidirectionality helps, but it does not fully solve the problem of weighing different clauses. When both parts use strong emotional language, the model tends to average them instead of picking out the main idea.
+
+**Irony / informal vocabulary.** Reviews using superficially negative words affectionately ("idiotic and ugly") or genre informality ("silly hack and slash flick…") are systematically misclassified no model in the comparison reads tone, only token statistics.
+
+**Domain bias.** A Portuguese review (*"apesar de seus graves problemas, o filme consegue entreter"*) was observed in the training data. Non English reviews fall outside the GloVe English vocabulary; the BiLSTM treats them as bags of unknown tokens.
+
+**Length is not predictive of error.** Mean length 114 chars (correct) vs 116 (errors); short review (<200 chars) error rate ~23% vs overall ~22%.
+
+## 12. Compute usage
+
+Hardware: RTX 4060 GPU with AMD ryzen 7 CPU. Throughout the report random seed 42 was used.
+
+| Component | Time |
+|---|---:|
+| A1 heuristic (predict 11,503 rows) | 0.005 s |
+| A2 TF IDF + LogReg (fit + predict) | ~1.3 s |
+| B1 TF IDF fit (8,530 reviews) | 1.2 s |
+| B2 self Word2Vec | 2.0 s |
+| B3 GloVe + LogReg | 27.7 s (mostly disk load) |
+| B4 BiLSTM, 5 epochs to early stop, GPU | 18 s training + ~25 s GloVe load |
+
+## References
+
+[1] Pedregosa, F. et al. (2011). *Scikit learn: Machine Learning in Python*. JMLR, 12, 2825–2830.
+
+[2] Bird, S., Klein, E. & Loper, E. (2009). *Natural Language Processing with Python*. O'Reilly. NLTK `movie_reviews` corpus derived from Pang, B. & Lee, L. (2004), "A sentimental education", ACL.
+
+[3] Klimt, B. & Yang, Y. (2004). *The Enron Corpus: A New Dataset for Email Classification Research*. ECML.
+
+[4] Manning, C. D., Raghavan, P. & Schütze, H. (2008). *Introduction to Information Retrieval*. Cambridge University Press.
+
+[5] Řehůřek, R. & Sojka, P. (2010). *Software Framework for Topic Modelling with Large Corpora*. LREC.
+
+[6] Pennington, J., Socher, R. & Manning, C. D. (2014). *GloVe: Global Vectors for Word Representation*. EMNLP.
+
+[7] Paszke, A. et al. (2019). *PyTorch: An Imperative Style, High Performance Deep Learning Library*. NeurIPS.
+
+[8] Hochreiter, S. & Schmidhuber, J. (1997). *Long Short Term Memory*. Neural Computation, 9(8). (Bidirectional LSTM as in Schuster & Paliwal, 1997, IEEE Trans. Signal Processing.)
+
+
