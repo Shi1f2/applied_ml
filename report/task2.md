@@ -35,3 +35,42 @@ All errors are IOD-normalised so they are scale-free [11]:
 - **per-image NME** = mean of the five per-point Euclidean errors, divided by the ground-truth IOD.
 - **failure rate at `t`** = fraction of images with NME > `t`. Reported at `t ∈ {0.05, 0.08, 0.10}`; `t = 0.10` is the standard "obvious failure" cutoff [11].
 - **CED** = empirical CDF of per-image NME; AUC@0.10 is its normalised integral up to `t = 0.10`.
+
+## 6. Validation results
+
+All numbers are on the held-out validation set (211 images). The two approaches are compared on the same `eval_transform`-preprocessed inputs.
+
+| Model | Mean NME | Median | Std | AUC@0.10 | Fail@0.05 | Fail@0.08 | Fail@0.10 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| A1 — HOG + ridge | 0.054 | 0.047 | 0.026 | 0.480 | 0.441 | 0.109 | **0.047** |
+| A2 — CNN (4-block) | 0.057 | 0.053 | 0.021 | 0.434 | 0.569 | 0.142 | **0.047** |
+
+![Figure 3](../figures/task2_ced.png)
+
+*Figure 3: Cumulative error distribution on validation. A1 leads at the tight end (NME ≤ 0.05); the curves cross near 0.10 and merge above it. Both methods fail on the same ~5% of images.*
+
+![Figure 4](../figures/task2_boxplot.png)
+
+*Figure 4: Per-image NME boxplot. A1 has a slightly tighter median but heavier upper-tail outliers (1 image at NME ≈ 0.18); A2 has no outlier above 0.14.*
+
+![Figure 5](../figures/task2_per_point.png)
+
+*Figure 5: Per-landmark mean error normalised by IOD. The nose (index 2) is the hardest landmark for both methods — it has the largest within-class spread (§2) and weak local edge structure on smooth skin.*
+
+Both approaches reach **identical failure rate at 0.10** (4.7%), and A1 slightly leads on average — surprising for a 2.6-second classical model vs a 24-minute CNN. The interpretation is that the validation distribution is close to the canonical pose A1 assumes, and HOG is near-perfect for eye/mouth-corner localisation under that assumption. The CNN's capacity is partially "spent" on training-augmentation invariances the validation set does not test.
+
+## 7. Qualitative analysis and failure cases
+
+A1 best/median/worst grids (Figure 6) make the failure typology direct: best cases are well-lit, frontal, eyes open; median cases have small nose offsets; worst cases share high yaw, very dark scenes, or hands/objects occluding the lower face. The worst row collapses toward the mean shape — the regressor falls back on its prior because HOG patches at the mean-shape location no longer overlap the actual landmarks.
+
+![Figure 6](../figures/task2_qualitative_classical.png)
+
+*Figure 6: A1 best (top), median (middle), worst (bottom) on validation. White ◯ = GT, coloured × = pred.*
+
+**Pose bias.** Both models trained on largely frontal faces; performance degrades sharply with yaw. §8 quantifies this: A1 nearly doubles between 0° and ±20° rotation; A2 stays roughly flat.
+
+**Lighting bias.** Brightness shifts of ±60 grey levels cost ≤ 2% NME for both, helped by A2's contrast augmentation and A1's HOG gradient normalisation. Actual lighting failures are dark, low-contrast scenes where gradient cues vanish — outside the controlled sweep.
+
+**Occlusion bias.** Random occlusion degrades A1 faster (NME doubles at 30% occlusion vs 23% increase for A2), consistent with HOG patches being location-fixed.
+
+**Dataset bias.** Worst-NME residuals trend slightly toward darker-skinned and very young/old subjects, plausibly because eye-corner contrast is weaker in those conditions — a sampling effect rather than architectural.
