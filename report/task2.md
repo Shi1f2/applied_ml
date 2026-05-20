@@ -74,3 +74,65 @@ A1 best/median/worst grids (Figure 6) make the failure typology direct: best cas
 **Occlusion bias.** Random occlusion degrades A1 faster (NME doubles at 30% occlusion vs 23% increase for A2), consistent with HOG patches being location-fixed.
 
 **Dataset bias.** Worst-NME residuals trend slightly toward darker-skinned and very young/old subjects, plausibly because eye-corner contrast is weaker in those conditions — a sampling effect rather than architectural.
+
+## 8. Robustness analysis
+
+A2 is the chosen model for the 10-mark robustness analysis; A1 is plotted alongside to isolate the contribution of training augmentation.
+
+![Figure 7](../figures/task2_robust_rotation.png) ![Figure 8](../figures/task2_robust_scale.png)
+
+*Figures 7 and 8: Rotation and scale sweeps. A1 V-curves sharply (NME 0.054 → 0.139 at −30°, 0.150 at +30°; 0.054 → 0.177 at scale 0.7×); A2 stays within `[0.057, 0.083]` across rotation and within `[0.057, 0.140]` across scale. The training-augmentation envelope (±20° rotation, ±10% scale) is precisely the band over which A2 is flat.*
+
+![Figure 9](../figures/task2_robust_noise.png) ![Figure 10](../figures/task2_robust_blur.png)
+
+*Figures 9 and 10: Noise and blur sweeps. A2 is more robust to Gaussian noise (it saw `σ ≤ 7.5` on the 0–255 scale during training); HOG histograms are more easily corrupted. Blur is the exception — at `σ = 6` A2 trails A1 (0.128 vs 0.096) because **blur was not in the training augmentation menu**, illustrating the principle that a CNN is robust to perturbations represented at training time and not otherwise.*
+
+The remaining sweeps follow the pattern: brightness curves are nearly flat for both; A2 leads on occlusion at all box sizes. Across five of six perturbations the augmentation pays for itself; the blur gap is attributable to a known training-augmentation omission.
+
+## 9. Test predictions
+
+A2 is applied to the 554 test images (preserved order); 128-frame predictions are multiplied by `2.0` back to the 256-frame and written through the **provided** `save_as_csv` to `outputs/results_task2.csv` (shape `(554, 10)`, asserts pass). Predicted coordinates span `[58, 196]`, clustered around the training mean.
+
+## 10. Compute usage
+
+Hardware: AMD64 CPU + NVIDIA RTX 4060 Laptop GPU (8 GB VRAM, CUDA 12.4, PyTorch 2.6 [12]). Random seed 42 used everywhere. Wall-clock times from `time.perf_counter`.
+
+| Component | Time |
+|---|---:|
+| A1 preprocess + fit + val predict (CPU) | 2.6 s |
+| A2 CNN training (150 epochs, GPU) | 1426 s (≈ 23 min 46 s) |
+| A2 CNN val inference (211 images, GPU) | < 1 s |
+| A2 CNN test inference (554 images, GPU) | ≈ 1 s |
+| Robustness sweep (33 perturbed copies × 2 models) | ≈ 50 s |
+
+## References
+
+[1] OpenCV Dev. Team. *OpenCV: Open Source Computer Vision Library*. https://opencv.org. Used for `cv2.resize`, `cv2.warpAffine`, `cv2.GaussianBlur`.
+
+[2] Xiong, X. & De la Torre, F. (2013). *Supervised Descent Method and its Applications to Face Alignment*. CVPR.
+
+[3] Dalal, N. & Triggs, B. (2005). *Histograms of Oriented Gradients for Human Detection*. CVPR.
+
+[4] Pedregosa, F. et al. (2011). *Scikit-learn: Machine Learning in Python*. JMLR, 12, 2825–2830.
+
+[5] Huber, P. J. (1964). *Robust Estimation of a Location Parameter*. The Annals of Mathematical Statistics, 35(1), 73–101. (Smooth-L1 / Huber loss.)
+
+[6] van der Walt, S. et al. (2014). *scikit-image: image processing in Python*. PeerJ 2:e453. (Used for `skimage.feature.hog`, `skimage.color.rgb2gray`.)
+
+[7] Ioffe, S. & Szegedy, C. (2015). *Batch Normalization: Accelerating Deep Network Training by Reducing Internal Covariate Shift*. ICML.
+
+[8] Lin, M., Chen, Q. & Yan, S. (2014). *Network in Network*. ICLR. (Global average pooling.)
+
+[9] Loshchilov, I. & Hutter, F. (2017). *SGDR: Stochastic Gradient Descent with Warm Restarts*. ICLR. (Cosine schedule.)
+
+[10] Pascanu, R., Mikolov, T. & Bengio, Y. (2013). *On the difficulty of training recurrent neural networks*. ICML. (Gradient clipping.)
+
+[11] Wu, Y. & Ji, Q. (2019). *Facial Landmark Detection: A Literature Survey*. IJCV, 127(2), 115–142. (NME / IOD normalisation, CED, failure-rate@0.10 conventions.)
+
+[12] Paszke, A. et al. (2019). *PyTorch: An Imperative Style, High-Performance Deep Learning Library*. NeurIPS.
+
+[13] Kingma, D. P. & Ba, J. (2015). *Adam: A Method for Stochastic Optimization*. ICLR.
+
+[14] Sun, Y., Wang, X. & Tang, X. (2013). *Deep Convolutional Network Cascade for Facial Point Detection*. CVPR. (Foundational reference for CNN-based 5-point landmark regression.)
+
+[15] Cootes, T. F., Edwards, G. J. & Taylor, C. J. (1998). *Active Appearance Models*. ECCV. (Mean-shape + statistical-model lineage that motivates the residual head.)
