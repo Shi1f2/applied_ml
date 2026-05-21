@@ -1,3 +1,7 @@
+# Task 1 — initial data exploration.
+# Dumps class balance, length distributions and spam-pattern hits so the
+# report has summary statistics. Also seeds a small unlabelled-spam oracle
+# CSV the user can hand-label to verify Stage A on real spam rows.
 import sys
 from pathlib import Path
 
@@ -54,6 +58,7 @@ def main():
     plt.close(fig)
     print(f'wrote {length_fig}')
 
+    # Mean hits per label gives a first view of which spam cues correlate with each class.
     signals = signals_dataframe(train['text'])
     signals['label'] = train['label'].values
     pattern_table = signals.groupby('label').mean().T

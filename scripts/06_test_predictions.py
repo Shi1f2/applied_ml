@@ -1,3 +1,6 @@
+# Builds the final Task 1 test CSV with the two-stage pipeline:
+# Stage A flags spam -> rows get SPAM_DUMMY_LABEL; Stage B (BiLSTM) predicts
+# sentiment for the rest. Output is (n_test, 1) in original row order.
 import sys
 from pathlib import Path
 
@@ -13,6 +16,7 @@ from src.stage_a import heuristic_predict
 from src.stage_b_lstm import BiLSTMSentiment
 
 
+# Dummy label for spam rows — neither 0 nor 1 per the brief.
 SPAM_DUMMY_LABEL = -1
 
 
@@ -21,6 +25,7 @@ def main():
     val = load_val()
     test = load_test()
 
+    # Drop spam from train/val so Stage B is only ever trained on real reviews.
     train_reviews = train[heuristic_predict(train['text']) == 0].reset_index(drop=True)
     val_reviews = val[heuristic_predict(val['text']) == 0].reset_index(drop=True)
     print(f'train (non-spam): {len(train_reviews)} rows')
@@ -44,6 +49,7 @@ def main():
     predictions = np.empty((len(test),), dtype=np.int64)
     predictions[test_spam_mask] = SPAM_DUMMY_LABEL
 
+    # Only run Stage B on non-spam rows; keeps the dummy label intact for spam.
     review_indices = np.where(~test_spam_mask)[0]
     review_texts = test.loc[review_indices, 'text'].tolist()
     review_predictions = model.predict(review_texts)

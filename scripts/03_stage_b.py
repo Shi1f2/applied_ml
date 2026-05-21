@@ -1,3 +1,5 @@
+# Stage B — train 3 classical sentiment models on non-spam rows
+# (TF-IDF / Word2Vec / GloVe) and compare them on the held-out val set.
 import sys
 import time
 from pathlib import Path
@@ -15,6 +17,8 @@ from src.stage_b import EmbeddingSentiment, PretrainedEmbeddingSentiment, TfidfS
 
 
 def filter_reviews(df):
+    # Use the high-precision heuristic only here — keeps spam definition stable
+    # while we benchmark Stage B model families.
     spam_mask = heuristic_predict(df['text']) == 1
     return df[~spam_mask].reset_index(drop=True)
 

@@ -1,3 +1,5 @@
+# Generates a small hand-label oracle on the val split so Stage A can be
+# scored on val too (the heuristic oracle in step 01 only covered train).
 import sys
 from pathlib import Path
 

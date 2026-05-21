@@ -1,3 +1,8 @@
+# Stage B: binary sentiment classifiers (pos/neg) trained only on rows that
+# Stage A flagged as non-spam. Three feature families are compared:
+#   - TF-IDF unigrams+bigrams (sparse, lexical)
+#   - Word2Vec trained from scratch on the provided corpus
+#   - Pretrained GloVe embeddings (transfer features)
 import numpy as np
 import gensim.downloader as gensim_downloader
 from gensim.models import Word2Vec
@@ -44,6 +49,7 @@ class EmbeddingSentiment:
         self.clf = LogisticRegression(max_iter=2000, C=1.0, random_state=random_state)
 
     def _embed(self, tokenised):
+        # Average pooling over in-vocab tokens; OOV-only rows stay as zeros.
         vectors = np.zeros((len(tokenised), self.vector_size), dtype=np.float32)
         wv = self.w2v.wv
         for i, tokens in enumerate(tokenised):

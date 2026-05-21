@@ -1,6 +1,11 @@
+# Task 2 evaluation metrics.
+# Primary metric is the inter-ocular-normalised mean Euclidean error (NME),
+# the standard for face-alignment benchmarks. CED + AUC + failure rates
+# all derive from per-image NME.
 import numpy as np
 
 
+# Eye points used to normalise — see preprocess_task2.HFLIP_SWAP_PAIRS.
 EYE_INDICES = (0, 1)
 
 
@@ -18,6 +23,8 @@ def inter_ocular_distance(points, eye_indices=EYE_INDICES):
 
 
 def per_image_nme(pred, gt, eye_indices=EYE_INDICES):
+    # Mean per-point Euclidean error divided by inter-ocular distance.
+    # Makes errors comparable across images at different scales.
     pred = np.asarray(pred, dtype=np.float64)
     gt = np.asarray(gt, dtype=np.float64)
     iod = inter_ocular_distance(gt, eye_indices)
@@ -35,6 +42,7 @@ def failure_rate(nme_values, threshold=0.10):
 
 
 def ced_curve(nme_values, thresholds=None):
+    # Cumulative error distribution — fraction of images with NME <= threshold.
     nme_values = np.asarray(nme_values)
     if thresholds is None:
         thresholds = np.linspace(0.0, 0.30, 301)

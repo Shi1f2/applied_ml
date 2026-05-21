@@ -1,3 +1,6 @@
+# CNN landmark regressor for Task 2.
+# 4-block VGG-style backbone -> GAP -> MLP head producing point-wise offsets
+# added to a fixed mean shape (residual formulation, easier to train).
 import numpy as np
 import torch
 from torch import nn
@@ -20,15 +23,18 @@ class LandmarkCNN(nn.Module):
         self.act = nn.ReLU(inplace=True)
         self.dropout = nn.Dropout(dropout)
         self.delta_head = nn.Linear(128, n_points * 2)
+        # Zero-init the offset head so the model starts at the mean shape exactly.
         nn.init.zeros_(self.delta_head.weight)
         nn.init.zeros_(self.delta_head.bias)
         self.n_points = n_points
         if mean_shape_norm is None:
             mean_shape_norm = torch.full((n_points, 2), 0.5)
+        # mean_shape is stored as a non-trainable buffer in [0,1] coordinates.
         self.register_buffer('mean_shape', mean_shape_norm.to(torch.float32))
 
     @staticmethod
     def _block(in_ch, out_ch):
+        # Conv-BN-ReLU x2 then 2x2 max pool — standard VGG block.
         return nn.Sequential(
             nn.Conv2d(in_ch, out_ch, kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(out_ch),
@@ -44,10 +50,13 @@ class LandmarkCNN(nn.Module):
         feat = self.gap(feat).flatten(1)
         feat = self.dropout(self.act(self.fc1(feat)))
         delta = self.delta_head(feat).view(-1, self.n_points, 2)
+        # Predict offsets from mean shape rather than absolute coords.
         return self.mean_shape.unsqueeze(0) + delta
 
 
 class TrainDataset(Dataset):
+    # Applies fresh random augmentation per sample per epoch.
+    # Points are returned in normalised [0,1] coordinates to match the model output.
     def __init__(self, images, points, seed=0):
         self.images = images
         self.points = points
@@ -65,6 +74,7 @@ class TrainDataset(Dataset):
 
 
 class EvalDataset(Dataset):
+    # Deterministic eval-time dataset; supports unlabelled test images too.
     def __init__(self, images, points=None):
         self.images = images
         self.points = points

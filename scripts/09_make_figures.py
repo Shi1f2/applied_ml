@@ -1,3 +1,6 @@
+# Builds the three Task 1 report figures: pipeline diagram, preprocessing
+# flowchart and BiLSTM architecture. Pure matplotlib so they render at A4
+# without any external dependencies.
 import sys
 from pathlib import Path
 

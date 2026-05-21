@@ -1,3 +1,5 @@
+# Builds the two Task 2 report figures: preprocessing/augmentation pipeline
+# and the CNN architecture diagram. Pure matplotlib for portable A4 rendering.
 import sys
 from pathlib import Path
 

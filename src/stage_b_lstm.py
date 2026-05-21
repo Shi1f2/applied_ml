@@ -1,3 +1,6 @@
+# BiLSTM sentiment classifier (deep-learning Stage B baseline).
+# GloVe-initialised embedding -> bidirectional LSTM -> MLP head.
+# Loss is BCEWithLogits (binary pos/neg). Early stops on val loss.
 import time
 
 import gensim.downloader as gensim_downloader
@@ -15,6 +18,7 @@ UNK_TOKEN = '<unk>'
 
 
 def build_vocab(tokenised, min_count=2, max_size=40000):
+    # Frequency-ranked vocab with reserved PAD=0 and UNK=1.
     counts = {}
     for tokens in tokenised:
         for tok in tokens:
@@ -34,6 +38,7 @@ def numericalise(tokens, vocab, max_len):
 
 
 def init_embedding_from_glove(vocab, glove_name='glove-wiki-gigaword-100'):
+    # Initialise embedding rows from GloVe; OOV rows stay random Gaussian.
     wv = gensim_downloader.load(glove_name)
     dim = wv.vector_size
     matrix = np.random.normal(0, 0.1, (len(vocab), dim)).astype(np.float32)
@@ -59,6 +64,7 @@ class TextDataset(Dataset):
 
 
 def collate_pad(batch, pad_idx=0):
+    # Pads each batch to its own longest sequence; lengths are kept for pack_padded.
     seqs, labels = zip(*batch)
     lengths = torch.tensor([len(s) for s in seqs], dtype=torch.long)
     max_len = lengths.max().item()
@@ -89,10 +95,12 @@ class BiLSTMClassifier(nn.Module):
 
     def forward(self, x, lengths):
         embedded = self.dropout(self.embedding(x))
+        # Packing skips padded steps so the LSTM only sees real tokens.
         packed = nn.utils.rnn.pack_padded_sequence(
             embedded, lengths.cpu(), batch_first=True, enforce_sorted=False
         )
         _, (hidden, _) = self.lstm(packed)
+        # Concatenate the final forward and backward hidden states.
         forward_hidden = hidden[-2]
         backward_hidden = hidden[-1]
         combined = torch.cat([forward_hidden, backward_hidden], dim=1)
@@ -208,6 +216,7 @@ class BiLSTMSentiment:
 
             improved = ''
             if val_loss is not None:
+                # Track best weights by val loss for early stopping.
                 if val_loss < best_val_loss - 1e-4:
                     best_val_loss = val_loss
                     best_state = {k: v.detach().cpu().clone() for k, v in self.model.state_dict().items()}
@@ -230,6 +239,7 @@ class BiLSTMSentiment:
                 break
 
         if best_state is not None:
+            # Restore the best-val checkpoint before returning.
             self.model.load_state_dict(best_state)
 
         return self

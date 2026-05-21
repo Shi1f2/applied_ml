@@ -1,3 +1,6 @@
+# Held-out val comparison between the classical baseline and the CNN.
+# Produces the CED curve, boxplot, per-point bars and qualitative best/median/worst
+# panels needed for the Task 2 evaluation section of the report.
 import sys
 from pathlib import Path
 
@@ -103,6 +106,7 @@ def plot_per_point_error(methods, out_path, gt):
 
 
 def plot_qualitative(method, images_val, out_path):
+    # Best / median / worst rows reveal both successes and failure modes for the report.
     nme = method['nme']
     pred = method['pred']
     gt = method['gt']

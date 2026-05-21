@@ -1,3 +1,6 @@
+# Trains the LandmarkCNN with augmentations + cosine LR schedule.
+# Tracks val NME each epoch, keeps best weights, and saves them for the
+# downstream evaluation, robustness and test scripts.
 import sys
 import time
 from pathlib import Path
@@ -22,6 +25,7 @@ LR = 1e-3
 WEIGHT_DECAY = 1e-4
 MAX_EPOCHS = 150
 PATIENCE = 20
+# Huber/SmoothL1 — robust to outlier landmark labels at small displacements.
 HUBER_BETA = 0.05
 NUM_WORKERS = 0
 
@@ -33,6 +37,7 @@ def set_seed(seed):
 
 
 def evaluate(model, loader, device):
+    # Returns predictions in 128x128 pixel coords (denormalised from [0,1]).
     model.eval()
     preds = []
     targets = []
@@ -82,6 +87,7 @@ def main():
     val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False,
                             num_workers=NUM_WORKERS)
 
+    # Seed the model's mean-shape prior with the empirical mean from train.
     mean_shape_orig = points_train.mean(axis=0).astype(np.float32)
     mean_shape_norm = torch.from_numpy((mean_shape_orig / 256.0))
     model = LandmarkCNN(mean_shape_norm=mean_shape_norm).to(device)
@@ -112,6 +118,7 @@ def main():
         marker = '*' if improved else ' '
         print(f'epoch {epoch:3d} {marker} train_loss={train_loss:.4f}  val_nme={nme:.4f}  ({dt:.1f}s)')
         if improved:
+            # Track the best val-NME checkpoint for early stopping.
             best_nme = float(nme)
             best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
             best_epoch = epoch

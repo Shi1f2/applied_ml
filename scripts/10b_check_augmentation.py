@@ -1,3 +1,6 @@
+# Visual sanity check that train_transform keeps the landmarks aligned with
+# the augmented image (rotation / flip / scale all need to transform points
+# the same way as pixels). Bug here would silently poison training.
 import sys
 from pathlib import Path
 

@@ -1,3 +1,4 @@
+# Task 2 .npz loaders. Test split has no points (held out by the markers).
 import numpy as np
 import matplotlib.pyplot as plt
 

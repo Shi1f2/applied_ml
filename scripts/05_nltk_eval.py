@@ -1,3 +1,6 @@
+# Brief requires evaluating one chosen Stage B model on the external NLTK
+# movie_reviews corpus. No spam there, so we can see how well sentiment
+# generalises beyond the provided distribution.
 import sys
 from pathlib import Path
 
@@ -50,6 +53,7 @@ def main():
     print(f'  predict time: {predict_time:.2f}s')
     print(format_metrics(metrics))
 
+    # Sanity check: Stage A should fire ~0 on NLTK since the corpus has no email spam.
     spam_on_nltk = heuristic_predict(nltk_texts).sum()
     print(f'\nStage A on NLTK: {spam_on_nltk}/{len(nltk_texts)} flagged as spam (expected: 0 -- NLTK has no spam)')
 

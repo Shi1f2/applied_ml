@@ -1,3 +1,4 @@
+# Thin loaders for the Task 1 CSVs. Row order must be preserved end-to-end.
 import pandas as pd
 
 from . import paths

@@ -1,3 +1,6 @@
+# Robustness analysis (10-mark requirement).
+# Sweeps the val set through noise / blur / brightness / occlusion / rotation /
+# scale at increasing intensities and records NME for both models.
 import sys
 import time
 from pathlib import Path
@@ -106,6 +109,7 @@ def perturb_occlusion(images, points, box_frac):
 
 
 def perturb_affine(images, points, angle_deg=0.0, scale=1.0):
+    # Rotate/scale both image and points together so NME stays meaningful.
     if angle_deg == 0.0 and scale == 1.0:
         return images, points
     h, w = images.shape[1:3]

@@ -1,3 +1,6 @@
+# Classical Task 2 baseline: HOG patches at the mean shape + ridge regression.
+# Trains, predicts on val, scales predictions back to original resolution and
+# saves per-image NME for later comparison with the CNN.
 import sys
 import time
 from pathlib import Path
@@ -43,6 +46,7 @@ def main():
     t_pred = time.perf_counter() - t0
     print(f'predict:    {t_pred:.1f}s  pred_val={pred_val_128.shape}')
 
+    # NME is computed at original resolution so it's comparable across methods.
     pred_val_orig = predictions_to_original(pred_val_128)
     nme_val = per_image_nme(pred_val_orig, points_val)
     metrics = summarise(nme_val)

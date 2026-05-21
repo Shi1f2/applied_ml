@@ -1,3 +1,5 @@
+# Hand-crafted regex features that look like classic email-spam tells.
+# Used as auxiliary signals for the unsupervised Stage A spam filter.
 import re
 
 import pandas as pd

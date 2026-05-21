@@ -1,5 +1,6 @@
 from pathlib import Path
 
+# Project root resolved from this file's location so paths work regardless of cwd.
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
 TASK1_DATA = DATA / "task1"

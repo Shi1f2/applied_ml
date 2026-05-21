@@ -1,3 +1,6 @@
+# Classical baseline: HOG-patch features at the mean shape + ridge regression
+# to predict per-point offsets. This is the non-deep-learning method we compare
+# the CNN against (>=2 approaches required by the brief).
 import numpy as np
 from skimage.feature import hog
 from skimage.color import rgb2gray
@@ -12,6 +15,7 @@ def to_grayscale_uint8(image_unit_rgb):
 
 
 def preprocess_for_classical(images, points=None):
+    # Resize to INPUT_SIZE and convert to greyscale uint8 (what HOG expects).
     grays = []
     new_points = []
     for i, img in enumerate(images):
@@ -27,6 +31,8 @@ def preprocess_for_classical(images, points=None):
 
 
 class HogPatchSDM:
+    # Single-step Supervised Descent Method: extract HOG around the mean shape,
+    # ridge-regress the displacement to ground-truth points.
     def __init__(self, patch_size=32, pixels_per_cell=8, cells_per_block=2,
                  orientations=9, alpha=1.0):
         self.patch_size = patch_size
@@ -39,6 +45,7 @@ class HogPatchSDM:
         self.feature_dim_per_patch = None
 
     def _hog_patch(self, image_gray, x, y):
+        # Crop a patch centred at (x,y); out-of-bounds regions stay zero-padded.
         h, w = image_gray.shape
         half = self.patch_size // 2
         x0 = int(round(x)) - half
@@ -64,10 +71,12 @@ class HogPatchSDM:
         return np.stack([self._features(img, pts) for img, pts in zip(images_gray, init_pts_per_image)])
 
     def fit(self, images_gray, points):
+        # Mean shape from the training points is the initialisation for every image.
         self.mean_shape = points.mean(axis=0).astype(np.float32)
         init = np.broadcast_to(self.mean_shape, (len(images_gray),) + self.mean_shape.shape).copy()
         X = self._features_batch(images_gray, init)
         self.feature_dim_per_patch = X.shape[1] // points.shape[1]
+        # Target is the displacement from mean shape to ground-truth.
         Y = (points - init).reshape(len(points), -1)
         self.regressor = Ridge(alpha=self.alpha)
         self.regressor.fit(X, Y)

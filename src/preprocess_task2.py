@@ -1,3 +1,6 @@
+# Task 2 image preprocessing + training augmentations.
+# Operates at 128x128 for speed; predictions are scaled back to 256x256
+# by predictions_to_original() before saving.
 import numpy as np
 import cv2
 
@@ -5,6 +8,8 @@ import cv2
 ORIGINAL_SIZE = 256
 INPUT_SIZE = 128
 COORD_SCALE = INPUT_SIZE / ORIGINAL_SIZE
+# Left/right landmark pairs that must swap identity under horizontal flip.
+# Indices follow Figure 2: 0=left eye, 1=right eye, 3=left mouth, 4=right mouth.
 HFLIP_SWAP_PAIRS = [(0, 1), (3, 4)]
 
 
@@ -15,6 +20,7 @@ def to_input_size(image, points):
 
 
 def predictions_to_original(points):
+    # Inverse of to_input_size for the coordinates only.
     return points.astype(np.float32) / COORD_SCALE
 
 
@@ -38,6 +44,7 @@ def apply_affine(image, points, M):
     image = cv2.warpAffine(image, M, (w, h),
                            flags=cv2.INTER_LINEAR,
                            borderMode=cv2.BORDER_REFLECT_101)
+    # Apply the same 2x3 affine to points using homogeneous coordinates.
     pts_h = np.concatenate([points, np.ones((points.shape[0], 1), dtype=points.dtype)], axis=1)
     points = (pts_h @ M.T).astype(np.float32)
     return image, points
@@ -48,6 +55,7 @@ def hflip(image, points):
     w = image.shape[1]
     points = points.copy()
     points[:, 0] = (w - 1) - points[:, 0]
+    # Swap left/right pairs so semantics survive the flip.
     for a, b in HFLIP_SWAP_PAIRS:
         points[[a, b]] = points[[b, a]]
     return image, points
@@ -68,6 +76,8 @@ def random_gaussian_noise(image, rng, sigma_max):
 def train_transform(image, points, rng,
                     rot_range=20.0, scale_range=0.10, trans_range=0.05,
                     hflip_prob=0.5, brightness=0.2, contrast=0.2, noise_sigma=0.03):
+    # Training augmentation pipeline — keeps points consistent with the image
+    # at every step. Supplies the robustness to unwanted variability the brief asks for.
     image, points = to_input_size(image, points)
     h, w = image.shape[:2]
     if rng.random() < hflip_prob:
@@ -85,6 +95,7 @@ def train_transform(image, points, rng,
 
 
 def eval_transform(image, points=None):
+    # Deterministic preprocessing used at val/test time — no augmentation.
     if points is None:
         points = np.zeros((5, 2), dtype=np.float32)
     image, points = to_input_size(image, points)

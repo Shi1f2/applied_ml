@@ -1,3 +1,7 @@
+# Stage A: self-labelled spam filter.
+# No external spam corpus is allowed, so seed labels come from a high-precision
+# "subject:" header heuristic, then a TF-IDF + logistic regression model
+# generalises beyond that single cue.
 import re
 
 import numpy as np
@@ -5,6 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 
 
+# Spam in this dataset is email-style — the "Subject:" header is a strong tell.
 SUBJECT_RE = re.compile(r'^\s*subject\s*:', re.IGNORECASE)
 
 
@@ -18,6 +23,8 @@ def heuristic_predict(texts):
 
 class TfidfSpamFilter:
     def __init__(self, seed_predict_fn=heuristic_predict, random_state=42):
+        # Seed labels are produced by an unsupervised heuristic; the LR then
+        # learns the broader spam vocabulary the heuristic alone would miss.
         self.seed_predict_fn = seed_predict_fn
         self.vectorizer = TfidfVectorizer(
             min_df=3, max_df=0.95,

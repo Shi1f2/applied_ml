@@ -1,3 +1,5 @@
+# End-to-end 3-class evaluation (spam / neg / pos) on the hand-labelled val
+# oracle — produces the required 3-class confusion matrix for the report.
 import sys
 from pathlib import Path
 
@@ -28,6 +30,7 @@ def main():
     oracle_texts = oracle['text'].tolist()
     spam_pred = heuristic_predict(oracle_texts)
     sentiment_pred = model.predict(oracle_texts)
+    # Spam overrides sentiment in the final 3-class label.
     end_to_end = np.where(spam_pred == 1, SPAM_DUMMY, sentiment_pred)
 
     true_class = np.where(oracle['is_spam'].values == 1, SPAM_DUMMY, oracle['label'].values).astype(int)

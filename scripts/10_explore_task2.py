@@ -1,3 +1,6 @@
+# Task 2 — initial data exploration.
+# Reports array shapes, image-size stats and per-point spatial spread, then
+# saves the mean-face / sample-grid figures used to motivate the design choices.
 import sys
 from pathlib import Path
 

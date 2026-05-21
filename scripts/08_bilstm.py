@@ -1,3 +1,6 @@
+# Trains the BiLSTM Stage B model and dumps training history + val predictions.
+# Used both for direct val comparison against the classical Stage B models and
+# as the source model for the final test predictions in step 06.
 import sys
 import time
 from pathlib import Path

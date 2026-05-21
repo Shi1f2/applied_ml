@@ -1,3 +1,4 @@
+# Shared binary-classifier metrics for both Stage A (spam) and Stage B (sentiment).
 import numpy as np
 from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
 

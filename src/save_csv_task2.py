@@ -1,3 +1,5 @@
+# Provided Task 2 saver from the Colab worksheet — do not roll our own.
+# Expects (554, 5, 2) points at original image resolution.
 import numpy as np
 
 

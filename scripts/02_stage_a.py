@@ -1,3 +1,6 @@
+# Stage A — train and evaluate the spam filter, then save per-row spam
+# predictions for train/val/test so Stage B can drop spam rows from training
+# and the final 3-class output can re-insert the dummy spam label.
 import sys
 from pathlib import Path
 
@@ -14,6 +17,7 @@ from src.stage_a import TfidfSpamFilter, heuristic_predict
 def main():
     train, val, test = load_all()
 
+    # Hand-labelled oracle from step 01 — used only as ground truth to score Stage A.
     oracle = pd.read_csv(paths.OUTPUTS / 'spam_oracle.csv').dropna(subset=['is_spam'])
     oracle['is_spam'] = oracle['is_spam'].astype(int)
 

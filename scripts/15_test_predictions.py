@@ -1,3 +1,6 @@
+# Generates the final Task 2 test CSV from the trained CNN checkpoint.
+# Predictions are made at 128x128 then rescaled to 256x256 before saving so
+# the (554, 5, 2) output matches the original image resolution.
 import sys
 from pathlib import Path
 
